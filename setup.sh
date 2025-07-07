@@ -119,6 +119,24 @@ if [ -d "$LARAVEL_LOG_PATH" ]; then
     sudo chmod -R 755 "$LARAVEL_LOG_PATH" 2>/dev/null || true
 fi
 
+# Ensure systemd journal is readable for custom service logs
+echo "🔐 Setting up systemd journal access..."
+sudo chmod -R 755 /var/log/journal 2>/dev/null || true
+
+# Check if custom services exist
+echo "🔎 Checking custom services..."
+if systemctl list-units --type=service | grep -q "redprecision.service"; then
+    echo "✅ RedPrecision service found"
+else
+    echo "⚠️  RedPrecision service not found - logs will be empty until service is running"
+fi
+
+if systemctl list-units --type=service | grep -q "tile_server.service"; then
+    echo "✅ Tile Server service found"
+else
+    echo "⚠️  Tile Server service not found - logs will be empty until service is running"
+fi
+
 # Check disk space
 echo "💾 Checking disk space..."
 AVAILABLE_SPACE=$(df / | awk 'NR==2 {print $4}')
@@ -153,6 +171,8 @@ check_log_path() {
 check_log_path "$APACHE_LOG_PATH" "Apache logs"
 check_log_path "$LARAVEL_LOG_PATH" "Laravel logs"
 check_log_path "$PM2_LOG_PATH" "PM2 logs"
+check_log_path "$REDPRECISION_LOG_PATH" "RedPrecision AI service"
+check_log_path "$TILE_SERVER_LOG_PATH" "Tile Server service"
 # PHP-FPM logs are at system-managed locations
 
 echo ""

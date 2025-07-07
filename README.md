@@ -10,7 +10,8 @@ This repository contains a fully configurable ELK (Elasticsearch, Logstash, Kiba
   - Laravel application logs
   - PM2 process logs
   - PHP-FPM service logs
-  - System logs (syslog, auth.log)
+  - Custom systemd services (RedPrecision AI, Tile Server)
+  - System logs (syslog, auth.log, systemd journal)
   - Custom application logs
 - **Optional Filebeat for enhanced log shipping**
 - **GeoIP analysis for Apache access logs**
@@ -62,6 +63,10 @@ APACHE_LOG_PATH=/var/log/apache2
 LARAVEL_LOG_PATH=/var/www/html/storage/logs
 PM2_LOG_PATH=/home/ubuntu/.pm2/logs
 # Note: PHP-FPM logs are at fixed system locations
+
+# Custom Service Applications
+REDPRECISION_LOG_PATH=/home/ubuntu/segment_roof_detection
+TILE_SERVER_LOG_PATH=/home/ubuntu/red-precision-tile-server
 
 # Custom log directories (optional)
 CUSTOM_LOG_PATH_1=/var/log/myapp1
@@ -152,10 +157,33 @@ PHP application errors typically appear in Apache error logs. PHP-FPM service lo
 **Format**: `[timestamp] LEVEL: message`  
 **Structured fields**: timestamp, level, fpm_message
 
+### Custom Systemd Services
+
+The configuration includes support for two custom application services:
+
+**RedPrecision Service (Python AI):**
+- **Service**: `redprecision.service` 
+- **Type**: Python roof detection AI application
+- **Logs**: Application logs + systemd journal
+- **Location**: `/home/ubuntu/segment_roof_detection/`
+
+**Tile Server (Node.js):**
+- **Service**: `tile_server.service`
+- **Type**: Node.js geospatial tile server
+- **Logs**: Application logs + systemd journal  
+- **Location**: `/home/ubuntu/red-precision-tile-server/`
+
+**Features:**
+- **Dual logging**: Both application logs and systemd journal
+- **Smart parsing**: JSON and standard log format support
+- **Service identification**: Automatic service type tagging
+- **Systemd integration**: Direct journal log collection
+
 ### System Logs
 
 - **Syslog**: Standard syslog format parsing
 - **Auth logs**: Authentication and authorization events
+- **Systemd Journal**: Custom service logs via journald
 
 ## Kibana Setup
 
@@ -173,6 +201,9 @@ After starting the stack, create index patterns in Kibana:
    - `laravel_mobile-*` (Laravel mobile logs)
    - `pm2-*`
    - `php_fpm-*` (PHP-FPM service logs)
+   - `redprecision_app-*` (RedPrecision AI application)
+   - `tile_server_app-*` (Tile Server application)
+   - `systemd_custom-*` (Custom service systemd logs)
    - `syslog-*`
    - `auth-*`
 
@@ -205,6 +236,22 @@ tags: "laravel"
 **Combine filters for specific analysis:**
 ```
 tags: "laravel" AND level: "ERROR" AND log_category: "mobile"
+```
+
+**Filter custom service logs:**
+```
+service_type: "python_ai"           # RedPrecision AI logs
+service_type: "nodejs_geospatial"   # Tile Server logs
+tags: "custom_services"             # All custom services
+service_name: "redprecision"        # Specific to RedPrecision
+service_name: "tile_server"         # Specific to Tile Server
+```
+
+**View systemd service logs:**
+```
+type: "systemd_custom"
+_SYSTEMD_UNIT: "redprecision.service"
+_SYSTEMD_UNIT: "tile_server.service"
 ```
 
 ## Maintenance

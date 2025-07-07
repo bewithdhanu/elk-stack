@@ -40,6 +40,11 @@ services:
       # System logs
       - /var/log/syslog:/var/log/syslog:ro
       - /var/log/auth.log:/var/log/auth.log:ro
+      # Systemd journal logs
+      - /var/log/journal:/var/log/journal:ro
+      # Custom Service Logs - RedPrecision and Tile Server
+      - ${REDPRECISION_LOG_PATH:-/home/ubuntu/segment_roof_detection}:/home/ubuntu/segment_roof_detection:ro
+      - ${TILE_SERVER_LOG_PATH:-/home/ubuntu/red-precision-tile-server}:/home/ubuntu/red-precision-tile-server:ro
       # Custom log directories
       - ${CUSTOM_LOG_PATH_1:-/tmp/empty}:/logs/custom1:ro
       - ${CUSTOM_LOG_PATH_2:-/tmp/empty}:/logs/custom2:ro

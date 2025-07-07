@@ -129,6 +129,42 @@ filebeat.inputs:
     service: system
   fields_under_root: true
 
+# Custom Service Logs - RedPrecision (Python AI)
+- type: log
+  enabled: true
+  paths:
+    - /home/ubuntu/segment_roof_detection/*.log
+    - /home/ubuntu/segment_roof_detection/app.log
+  fields:
+    logtype: redprecision_app
+    service: redprecision
+    service_type: python_ai
+  fields_under_root: true
+
+# Custom Service Logs - Tile Server (Node.js)
+- type: log
+  enabled: true
+  paths:
+    - /home/ubuntu/red-precision-tile-server/logs/*.log
+    - /home/ubuntu/red-precision-tile-server/app.log
+  fields:
+    logtype: tile_server_app
+    service: tile_server
+    service_type: nodejs_geospatial
+  fields_under_root: true
+
+# Systemd Journal for custom services
+- type: journald
+  enabled: true
+  id: custom-services
+  include_matches:
+    - _SYSTEMD_UNIT=redprecision.service
+    - _SYSTEMD_UNIT=tile_server.service
+  fields:
+    logtype: systemd_custom
+    service: systemd
+  fields_under_root: true
+
 # Docker container logs
 - type: container
   enabled: true
