@@ -6,10 +6,10 @@ This repository contains a fully configurable ELK (Elasticsearch, Logstash, Kiba
 
 - **Configurable via environment variables**
 - **Support for multiple log types:**
-  - Apache access and error logs
+  - Apache access and error logs (including PHP errors)
   - Laravel application logs
   - PM2 process logs
-  - PHP error logs
+  - PHP-FPM service logs
   - System logs (syslog, auth.log)
   - Custom application logs
 - **Optional Filebeat for enhanced log shipping**
@@ -61,7 +61,7 @@ LOGSTASH_HEAP_SIZE=1g    # For 8GB server, use 2g
 APACHE_LOG_PATH=/var/log/apache2
 LARAVEL_LOG_PATH=/var/www/html/storage/logs
 PM2_LOG_PATH=/home/ubuntu/.pm2/logs
-PHP_LOG_PATH=/var/log/php
+# Note: PHP-FPM logs are at fixed system locations
 
 # Custom log directories (optional)
 CUSTOM_LOG_PATH_1=/var/log/myapp1
@@ -142,10 +142,15 @@ The configuration supports Laravel's daily log rotation with different log types
 - **Multiple formats supported**: with and without timestamps
 - **Fallback parsing**: Captures all log content even if timestamp parsing fails
 
-### PHP Error Logs
+### PHP-FPM Service Logs
 
-- **Format**: `[timestamp] PHP LEVEL: error_message`
-- **Structured fields**: timestamp, level, error_message
+PHP application errors typically appear in Apache error logs. PHP-FPM service logs track the PHP process manager:
+- **Current logs**: `php8.1-fpm.log`
+- **Rotated logs**: `php8.1-fpm.log.1`, `php8.1-fpm.log.2`, etc.
+- **Compressed logs**: `php8.1-fpm.log.1.gz`, `php8.1-fpm.log.2.gz`, etc.
+
+**Format**: `[timestamp] LEVEL: message`  
+**Structured fields**: timestamp, level, fpm_message
 
 ### System Logs
 
@@ -167,7 +172,7 @@ After starting the stack, create index patterns in Kibana:
    - `laravel_info-*` (Laravel info logs)
    - `laravel_mobile-*` (Laravel mobile logs)
    - `pm2-*`
-   - `php_error-*`
+   - `php_fpm-*` (PHP-FPM service logs)
    - `syslog-*`
    - `auth-*`
 

@@ -95,15 +95,16 @@ filebeat.inputs:
     service: nodejs
   fields_under_root: true
 
-# PHP error logs
+# PHP-FPM service logs (current and rotated - non-compressed)
 - type: log
   enabled: true
   paths:
-    - /var/log/php/*.log
-    - /var/log/php-fpm.log
+    - /var/log/php8.1-fpm.log
+    - /var/log/php8.1-fpm.log.*
+  exclude_files: ['\.gz$']  # Exclude .gz files as they're handled by Logstash
   fields:
-    logtype: php_error
-    service: php
+    logtype: php_fpm
+    service: php-fpm
   fields_under_root: true
   multiline.pattern: '^\['
   multiline.negate: true

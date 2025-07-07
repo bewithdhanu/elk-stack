@@ -84,8 +84,7 @@ echo "📁 Setting up log directories..."
 # Apache logs (usually exist by default)
 create_log_dir "/var/log/apache2" "root" "adm"
 
-# PHP logs
-create_log_dir "/var/log/php" "www-data" "www-data"
+# PHP-FPM logs are already managed by the system at /var/log/php8.1-fpm.log
 
 # Check if Laravel directory exists
 LARAVEL_LOG_PATH="/var/www/html/storage/logs"
@@ -114,7 +113,7 @@ echo "🔐 Setting log file permissions..."
 sudo chmod -R 755 /var/log/apache2 2>/dev/null || true
 # Ensure gzipped Apache logs are readable
 sudo chmod 644 /var/log/apache2/*.gz 2>/dev/null || true
-sudo chmod -R 755 /var/log/php 2>/dev/null || true
+# PHP-FPM logs permissions are managed by the system
 if [ -d "$LARAVEL_LOG_PATH" ]; then
     sudo chown -R www-data:www-data "$LARAVEL_LOG_PATH" 2>/dev/null || true
     sudo chmod -R 755 "$LARAVEL_LOG_PATH" 2>/dev/null || true
@@ -154,7 +153,7 @@ check_log_path() {
 check_log_path "$APACHE_LOG_PATH" "Apache logs"
 check_log_path "$LARAVEL_LOG_PATH" "Laravel logs"
 check_log_path "$PM2_LOG_PATH" "PM2 logs"
-check_log_path "$PHP_LOG_PATH" "PHP logs"
+# PHP-FPM logs are at system-managed locations
 
 echo ""
 echo "🚀 Setup complete! Next steps:"

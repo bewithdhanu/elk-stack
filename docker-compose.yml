@@ -35,8 +35,8 @@ services:
       - ${LARAVEL_LOG_PATH:-/var/www/html/storage/logs}:/var/www/html/storage/logs:ro
       # PM2 logs
       - ${PM2_LOG_PATH:-/home/ubuntu/.pm2/logs}:/home/ubuntu/.pm2/logs:ro
-      # PHP logs
-      - ${PHP_LOG_PATH:-/var/log/php}:/var/log/php:ro
+      # PHP-FPM logs (Ubuntu 22.04 default location)
+      - /var/log:/var/log:ro
       # System logs
       - /var/log/syslog:/var/log/syslog:ro
       - /var/log/auth.log:/var/log/auth.log:ro
