@@ -1,0 +1,164 @@
+filebeat.inputs:
+# Apache access logs (current and rotated - non-compressed)
+- type: log
+  enabled: true
+  paths:
+    - /var/log/apache2/access.log
+    - /var/log/apache2/access.log.*
+  exclude_files: ['\.gz$']  # Exclude .gz files as they're handled by Logstash
+  fields:
+    logtype: apache_access
+    service: apache
+  fields_under_root: true
+  multiline.pattern: '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+  multiline.negate: true
+  multiline.match: after
+
+# Apache error logs (current and rotated - non-compressed)
+- type: log
+  enabled: true
+  paths:
+    - /var/log/apache2/error.log
+    - /var/log/apache2/error.log.*
+  exclude_files: ['\.gz$']  # Exclude .gz files as they're handled by Logstash
+  fields:
+    logtype: apache_error
+    service: apache
+  fields_under_root: true
+  multiline.pattern: '^\['
+  multiline.negate: true
+  multiline.match: after
+
+# Laravel logs - General
+- type: log
+  enabled: true
+  paths:
+    - /var/www/html/storage/logs/laravel-*.log
+  fields:
+    logtype: laravel
+    service: laravel
+    log_category: general
+  fields_under_root: true
+  multiline.pattern: '^\[\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+
+# Laravel logs - Error
+- type: log
+  enabled: true
+  paths:
+    - /var/www/html/storage/logs/error-*.log
+  fields:
+    logtype: laravel_error
+    service: laravel
+    log_category: error
+  fields_under_root: true
+  multiline.pattern: '^\[\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+
+# Laravel logs - Info
+- type: log
+  enabled: true
+  paths:
+    - /var/www/html/storage/logs/info-*.log
+  fields:
+    logtype: laravel_info
+    service: laravel
+    log_category: info
+  fields_under_root: true
+  multiline.pattern: '^\[\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+
+# Laravel logs - Mobile
+- type: log
+  enabled: true
+  paths:
+    - /var/www/html/storage/logs/mobile-*.log
+  fields:
+    logtype: laravel_mobile
+    service: laravel
+    log_category: mobile
+  fields_under_root: true
+  multiline.pattern: '^\[\d{4}-\d{2}-\d{2}'
+  multiline.negate: true
+  multiline.match: after
+
+# PM2 logs
+- type: log
+  enabled: true
+  paths:
+    - /home/ubuntu/.pm2/logs/*.log
+  fields:
+    logtype: pm2
+    service: nodejs
+  fields_under_root: true
+
+# PHP error logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/php/*.log
+    - /var/log/php-fpm.log
+  fields:
+    logtype: php_error
+    service: php
+  fields_under_root: true
+  multiline.pattern: '^\['
+  multiline.negate: true
+  multiline.match: after
+
+# System logs
+- type: log
+  enabled: true
+  paths:
+    - /host/var/log/syslog
+  fields:
+    logtype: syslog
+    service: system
+  fields_under_root: true
+
+- type: log
+  enabled: true
+  paths:
+    - /host/var/log/auth.log
+  fields:
+    logtype: auth
+    service: system
+  fields_under_root: true
+
+# Docker container logs
+- type: container
+  enabled: true
+  paths:
+    - /var/lib/docker/containers/*/*.log
+  processors:
+    - add_docker_metadata:
+        host: "unix:///var/run/docker.sock"
+
+# Output to Logstash
+output.logstash:
+  hosts: ["logstash:5045"]
+
+# Processors
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_fields:
+      target: ''
+      fields:
+        environment: production
+        datacenter: main
+
+# Logging
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+
+# Monitoring
+monitoring.enabled: false 

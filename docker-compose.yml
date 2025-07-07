@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.11.0}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTICSEARCH_JAVA_OPTS=-Xms${ES_HEAP_SIZE:-2g} -Xmx${ES_HEAP_SIZE:-2g}
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "${ES_PORT:-9200}:9200"
+    networks:
+      - elk
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${ELASTIC_VERSION:-8.11.0}
+    container_name: logstash
+    environment:
+      - LS_JAVA_OPTS=-Xms${LOGSTASH_HEAP_SIZE:-1g} -Xmx${LOGSTASH_HEAP_SIZE:-1g}
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      # Apache logs
+      - ${APACHE_LOG_PATH:-/var/log/apache2}:/var/log/apache2:ro
+      # Laravel logs
+      - ${LARAVEL_LOG_PATH:-/var/www/html/storage/logs}:/var/www/html/storage/logs:ro
+      # PM2 logs
+      - ${PM2_LOG_PATH:-/home/ubuntu/.pm2/logs}:/home/ubuntu/.pm2/logs:ro
+      # PHP logs
+      - ${PHP_LOG_PATH:-/var/log/php}:/var/log/php:ro
+      # System logs
+      - /var/log/syslog:/var/log/syslog:ro
+      - /var/log/auth.log:/var/log/auth.log:ro
+      # Custom log directories
+      - ${CUSTOM_LOG_PATH_1:-/tmp/empty}:/logs/custom1:ro
+      - ${CUSTOM_LOG_PATH_2:-/tmp/empty}:/logs/custom2:ro
+    ports:
+      - "${LOGSTASH_PORT:-5044}:5044"
+      - "${LOGSTASH_BEATS_PORT:-5045}:5045"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_VERSION:-8.11.0}
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+      - xpack.encryptedSavedObjects.encryptionKey=${KIBANA_ENCRYPTION_KEY:-your-32-character-secret-key-here}
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+  # Optional: Filebeat for better log shipping
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:${ELASTIC_VERSION:-8.11.0}
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Same log paths as logstash
+      - ${APACHE_LOG_PATH:-/var/log/apache2}:/var/log/apache2:ro
+      - ${LARAVEL_LOG_PATH:-/var/www/html/storage/logs}:/var/www/html/storage/logs:ro
+      - ${PM2_LOG_PATH:-/home/ubuntu/.pm2/logs}:/home/ubuntu/.pm2/logs:ro
+      - ${PHP_LOG_PATH:-/var/log/php}:/var/log/php:ro
+      - /var/log:/host/var/log:ro
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+      - logstash
+    restart: unless-stopped
+    profiles:
+      - filebeat
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  elk:
+    driver: bridge
